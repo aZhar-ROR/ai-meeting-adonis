@@ -1,0 +1,145 @@
+@layout('layouts/app')
+
+@section('content')
+<style>
+  .page-header { margin-bottom: 28px; }
+  .page-title { font-size: 22px; font-weight: 700; }
+  .detail-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 28px; margin-bottom: 20px; }
+  .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-top: 20px; }
+  .meta-item label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; display: block; margin-bottom: 6px; }
+  .meta-item .meta-value { font-size: 14px; font-weight: 500; }
+  .badge-pending { background: rgba(251,191,36,.12); color: #fbbf24; border: 1px solid rgba(251,191,36,.2); }
+  .badge-in_progress { background: rgba(96,165,250,.12); color: #60a5fa; border: 1px solid rgba(96,165,250,.2); }
+  .badge-done { background: rgba(52,211,153,.12); color: #34d399; border: 1px solid rgba(52,211,153,.2); }
+  .badge-low { background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); }
+  .badge-medium { background: rgba(251,191,36,.12); color: #fbbf24; border: 1px solid rgba(251,191,36,.2); }
+  .badge-high { background: rgba(248,113,113,.12); color: #f87171; border: 1px solid rgba(248,113,113,.2); }
+  .edit-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 28px; }
+  .edit-card h2 { font-size: 16px; font-weight: 700; margin-bottom: 18px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-actions { display: flex; gap: 12px; margin-top: 20px; }
+  .btn-danger { background: rgba(248,113,113,.08); color: var(--danger); border: 1px solid rgba(248,113,113,.2); }
+  .btn-danger:hover { background: rgba(248,113,113,.15); border-color: rgba(248,113,113,.35); }
+  .desc-text { color: var(--muted); font-size: 14px; line-height: 1.6; margin-top: 12px; }
+</style>
+
+<div class="page-header">
+  <a href="/tasks" class="text-muted text-sm" style="text-decoration:none;">← Back to Tasks</a>
+  <h1 class="page-title mt-8">{{ task.title }}</h1>
+</div>
+
+@if(flashMessages.has('success'))
+  <div class="alert alert-success">
+    <iconify-icon icon="lucide:check-circle" width="16" height="16"></iconify-icon> {{ flashMessages.get('success') }}
+  </div>
+@end
+
+<div class="detail-card">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span class="badge badge-{{ task.status }}">{{ task.status.replace('_', ' ') }}</span>
+    <span class="badge badge-{{ task.priority }}">{{ task.priority }}</span>
+  </div>
+
+  @if(task.description)
+    <p class="desc-text">{{ task.description }}</p>
+  @else
+    <p class="desc-text" style="font-style:italic;">No description provided.</p>
+  @end
+
+  <div class="meta-grid">
+    <div class="meta-item">
+      <label>Project</label>
+      <div class="meta-value">
+        @if(task.project)
+          <a href="/projects/{{ task.project.id }}" style="color:var(--accent);text-decoration:none;">{{ task.project.name }}</a>
+        @else
+          <span class="text-muted">None</span>
+        @end
+      </div>
+    </div>
+
+    <div class="meta-item">
+      <label>Assignee</label>
+      <div class="meta-value">
+        @if(task.assignee)
+          {{ task.assignee.name }}
+        @else
+          <span class="text-muted">Unassigned</span>
+        @end
+      </div>
+    </div>
+
+    <div class="meta-item">
+      <label>Due Date</label>
+      <div class="meta-value">
+        {{ task.dueDate ? task.dueDate.toFormat('MMM d, yyyy') : '—' }}
+      </div>
+    </div>
+
+    <div class="meta-item">
+      <label>Meeting</label>
+      <div class="meta-value">
+        @if(task.meeting)
+          <a href="/history/{{ task.meeting.id }}" style="color:var(--accent);text-decoration:none;">{{ task.meeting.title }}</a>
+        @else
+          <span class="text-muted">None</span>
+        @end
+      </div>
+    </div>
+
+    <div class="meta-item">
+      <label>Created</label>
+      <div class="meta-value text-muted text-sm">{{ task.createdAt.toFormat('MMM d, yyyy') }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Update form -->
+<div class="edit-card">
+  <h2>Update Task</h2>
+  <form method="POST" action="/tasks/{{ task.id }}">
+    {{ csrfField() }}
+    <input type="hidden" name="_method" value="PATCH" />
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="assignedTo">Reassign To</label>
+        <select id="assignedTo" name="assignedTo" class="form-control">
+          <option value="">— Unassigned —</option>
+          @each(user in users)
+            <option value="{{ user.id }}" {{ task.assignedTo === user.id ? 'selected' : '' }}>{{ user.name }}</option>
+          @end
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="status">Status</label>
+        <select id="status" name="status" class="form-control">
+          <option value="pending" {{ task.status === 'pending' ? 'selected' : '' }}>Pending</option>
+          <option value="in_progress" {{ task.status === 'in_progress' ? 'selected' : '' }}>In Progress</option>
+          <option value="done" {{ task.status === 'done' ? 'selected' : '' }}>Done</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Save Changes</button>
+      <button type="button" class="btn btn-danger btn-sm" onclick="deleteTask({{ task.id }})">Delete Task</button>
+    </div>
+  </form>
+</div>
+
+<form id="delete-form" method="POST" style="display:none;">
+  {{ csrfField() }}
+  <input type="hidden" name="_method" value="DELETE" />
+</form>
+
+<script>
+  function deleteTask(id) {
+    if (!confirm('Delete this task? This cannot be undone.')) return
+    const form = document.getElementById('delete-form')
+    form.action = '/tasks/' + id
+    form.submit()
+  }
+</script>
+@end

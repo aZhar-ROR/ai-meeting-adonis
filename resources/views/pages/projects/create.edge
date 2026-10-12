@@ -1,0 +1,61 @@
+@layout('layouts/app')
+
+@section('content')
+<style>
+  .page-header { margin-bottom: 28px; }
+  .page-title { font-size: 22px; font-weight: 700; }
+  .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 32px; max-width: 560px; }
+  .form-actions { display: flex; gap: 12px; margin-top: 24px; }
+</style>
+
+<div class="page-header">
+  <a href="/projects" class="text-muted text-sm" style="text-decoration:none;">← Back to Projects</a>
+  <h1 class="page-title mt-8">New Project</h1>
+</div>
+
+@if(flashMessages.has('error'))
+  <div class="alert alert-error mb-16">
+    <span class="alert-icon">⚠️</span>
+    {{ flashMessages.get('error') }}
+  </div>
+@end
+
+<div class="form-card">
+  <form method="POST" action="/projects">
+    {{ csrfField() }}
+
+    <div class="form-group">
+      <label class="form-label" for="name">Project Name <span style="color:var(--danger)">*</span></label>
+      <input type="text" id="name" name="name" class="form-control" placeholder="e.g. Website Redesign" required />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="description">Description</label>
+      <textarea id="description" name="description" class="form-control" rows="3" placeholder="Brief description of this project..."></textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="status">Status</label>
+      <select id="status" name="status" class="form-control">
+        <option value="active">Active</option>
+        <option value="archived">Archived</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="createdBy">Created By</label>
+      <select id="createdBy" name="createdBy" class="form-control">
+        <option value="">— Select creator (optional) —</option>
+        @each(user in users)
+          <option value="{{ user.id }}">{{ user.name }}</option>
+        @end
+      </select>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Create Project</button>
+      <a href="/projects" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+@end

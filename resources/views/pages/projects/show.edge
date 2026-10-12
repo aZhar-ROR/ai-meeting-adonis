@@ -1,0 +1,263 @@
+@layout('layouts/app')
+
+@section('content')
+<style>
+  .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; }
+  .page-title { font-size: 22px; font-weight: 700; }
+  .stat-boxes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+  .stat-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; text-align: center; box-shadow: var(--shadow); }
+  .stat-box .stat-value { font-size: 28px; font-weight: 700; color: var(--accent); }
+  .stat-box .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: .06em; }
+  .section-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 24px; }
+  .section-card-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border-bottom: 1px solid var(--border); }
+  .section-card-title { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .section-card-body { padding: 20px 24px; }
+  .member-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .member-row:last-child { border-bottom: none; }
+  .member-info { display: flex; align-items: center; gap: 12px; }
+  .avatar { width: 34px; height: 34px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; }
+  .avatar-purple { background: #7c3aed; }
+  .avatar-blue { background: #2563eb; }
+  .avatar-green { background: #059669; }
+  .badge-role-admin { background: rgba(167,139,250,.12); color: #a78bfa; border: 1px solid rgba(167,139,250,.2); }
+  .badge-role-manager { background: rgba(96,165,250,.12); color: #60a5fa; border: 1px solid rgba(96,165,250,.2); }
+  .badge-role-developer { background: rgba(52,211,153,.12); color: #34d399; border: 1px solid rgba(52,211,153,.2); }
+  .badge-active { background: rgba(52,211,153,.12); color: #34d399; border: 1px solid rgba(52,211,153,.2); }
+  .badge-archived { background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); }
+  .badge-pending { background: rgba(251,191,36,.12); color: #fbbf24; border: 1px solid rgba(251,191,36,.2); }
+  .badge-in_progress { background: rgba(96,165,250,.12); color: #60a5fa; border: 1px solid rgba(96,165,250,.2); }
+  .badge-done { background: rgba(52,211,153,.12); color: #34d399; border: 1px solid rgba(52,211,153,.2); }
+  .badge-low { background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); }
+  .badge-medium { background: rgba(251,191,36,.12); color: #fbbf24; border: 1px solid rgba(251,191,36,.2); }
+  .badge-high { background: rgba(248,113,113,.12); color: #f87171; border: 1px solid rgba(248,113,113,.2); }
+  table { width: 100%; border-collapse: collapse; }
+  th { padding: 10px 12px; text-align: left; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--border); background: var(--surface-2); }
+  td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface-2); }
+  .add-member-form { display: flex; gap: 10px; margin-top: 16px; }
+  .add-member-form select { flex: 1; }
+  .btn-danger { background: rgba(248,113,113,.08); color: var(--danger); border: 1px solid rgba(248,113,113,.2); }
+  .btn-danger:hover { background: rgba(248,113,113,.15); border-color: rgba(248,113,113,.35); }
+  .empty-msg { color: var(--muted); font-size: 13px; font-style: italic; }
+  .meeting-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .meeting-row:last-child { border-bottom: none; }
+  .meeting-link { text-decoration: none; color: var(--text); font-weight: 500; font-size: 14px; }
+  .meeting-link:hover { color: var(--accent); }
+</style>
+
+<div class="page-header">
+  <div>
+    <a href="/projects" class="text-muted text-sm" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;"><iconify-icon icon="lucide:arrow-left" width="14" height="14"></iconify-icon> Back to Projects</a>
+    <h1 class="page-title mt-8">{{ project.name }}</h1>
+    @if(project.description)
+      <p class="text-muted text-sm mt-8">{{ project.description }}</p>
+    @end
+    <div style="margin-top:10px;display:flex;gap:8px;align-items:center;">
+      @if(project.status === 'active')
+        <span class="badge badge-active">Active</span>
+      @else
+        <span class="badge badge-archived">Archived</span>
+      @end
+      @if(project.creator)
+        <span class="text-muted text-xs">Created by {{ project.creator.name }}</span>
+      @end
+    </div>
+  </div>
+  <button class="btn btn-sm btn-danger" onclick="deleteProject({{ project.id }})">Delete Project</button>
+</div>
+
+@if(flashMessages.has('success'))
+  <div class="alert alert-success">
+    <iconify-icon icon="lucide:check-circle" width="16" height="16"></iconify-icon> {{ flashMessages.get('success') }}
+  </div>
+@end
+
+<!-- Stat boxes -->
+<div class="stat-boxes">
+  <div class="stat-box">
+    <div class="stat-value">{{ project.tasks.length }}</div>
+    <div class="stat-label">Tasks</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-value">{{ project.members.length }}</div>
+    <div class="stat-label">Members</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-value">{{ project.meetings.length }}</div>
+    <div class="stat-label">Meetings</div>
+  </div>
+</div>
+
+<!-- Members -->
+<div class="section-card">
+  <div class="section-card-header">
+    <span class="section-card-title"><iconify-icon icon="lucide:users" width="16" height="16"></iconify-icon> Members</span>
+  </div>
+  <div class="section-card-body">
+    @if(project.members.length === 0)
+      <p class="empty-msg">No members yet. Add team members below.</p>
+    @else
+      @each(member in project.members)
+        <div class="member-row">
+          <div class="member-info">
+            @if(member.role === 'admin')
+              <div class="avatar avatar-purple">{{ member.avatarInitials || member.name.substring(0,2).toUpperCase() }}</div>
+              <span class="fw-600">{{ member.name }}</span>
+              <span class="badge badge-role-admin">Admin</span>
+            @elseif(member.role === 'manager')
+              <div class="avatar avatar-blue">{{ member.avatarInitials || member.name.substring(0,2).toUpperCase() }}</div>
+              <span class="fw-600">{{ member.name }}</span>
+              <span class="badge badge-role-manager">Manager</span>
+            @else
+              <div class="avatar avatar-green">{{ member.avatarInitials || member.name.substring(0,2).toUpperCase() }}</div>
+              <span class="fw-600">{{ member.name }}</span>
+              <span class="badge badge-role-developer">Developer</span>
+            @end
+          </div>
+          <button class="btn btn-sm btn-danger" onclick="removeMember({{ project.id }}, {{ member.id }})">Remove</button>
+        </div>
+      @end
+    @end
+
+    @if(nonMembers.length > 0)
+      <form method="POST" action="/projects/{{ project.id }}/members" class="add-member-form">
+        {{ csrfField() }}
+        <select name="userId" class="form-control">
+          <option value="">— Select user to add —</option>
+          @each(user in nonMembers)
+            <option value="{{ user.id }}">{{ user.name }}</option>
+          @end
+        </select>
+        <button type="submit" class="btn btn-secondary btn-sm">Add Member</button>
+      </form>
+    @end
+  </div>
+</div>
+
+<!-- Board Statuses -->
+<div class="section-card">
+  <div class="section-card-header">
+    <span class="section-card-title"><iconify-icon icon="lucide:columns" width="16" height="16"></iconify-icon> Board Statuses</span>
+    <span class="text-muted text-xs">Defines Kanban columns for this project's tasks</span>
+  </div>
+  <div class="section-card-body">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;" id="status-chips">
+      @each(st in project.statuses)
+        <div style="display:flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;">
+          <span style="width:10px;height:10px;border-radius:50%;background:{{ st.color }};display:inline-block;flex-shrink:0;"></span>
+          <span style="font-size:13px;font-weight:500;">{{ st.name }}</span>
+          <span style="font-size:10px;color:var(--muted);">({{ st.slug }})</span>
+          @if(project.statuses.length > 1)
+            <button onclick="removeStatus({{ project.id }}, {{ st.id }})" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:0 2px;line-height:1;display:flex;align-items:center;" title="Remove status"><iconify-icon icon="lucide:x" width="12" height="12"></iconify-icon></button>
+          @end
+        </div>
+      @end
+    </div>
+
+    <form method="POST" action="/projects/{{ project.id }}/statuses" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+      {{ csrfField() }}
+      <div>
+        <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">Status Name</label>
+        <input type="text" name="name" placeholder="e.g. Review" class="form-control" style="width:160px;" required />
+      </div>
+      <div>
+        <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">Color</label>
+        <input type="color" name="color" value="#6366f1" style="width:40px;height:36px;border:1px solid var(--border);border-radius:6px;cursor:pointer;padding:2px;" />
+      </div>
+      <button type="submit" class="btn btn-secondary btn-sm">+ Add Status</button>
+    </form>
+  </div>
+</div>
+
+<!-- Tasks -->
+<div class="section-card">
+  <div class="section-card-header">
+    <span class="section-card-title"><iconify-icon icon="lucide:check-square" width="16" height="16"></iconify-icon> Tasks</span>
+    <a href="/tasks/create?project_id={{ project.id }}" class="btn btn-sm btn-secondary">+ Add Task</a>
+  </div>
+  <div class="section-card-body" style="padding:0;">
+    @if(project.tasks.length === 0)
+      <p class="empty-msg" style="padding:20px 24px;">No tasks yet.</p>
+    @else
+      <table>
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Assignee</th>
+            <th>Status</th>
+            <th>Priority</th>
+            <th>Due</th>
+          </tr>
+        </thead>
+        <tbody>
+          @each(task in project.tasks)
+            <tr>
+              <td><a href="/tasks/{{ task.id }}" style="text-decoration:none;color:var(--text);font-weight:500;">{{ task.title }}</a></td>
+              <td class="text-muted text-sm">{{ task.assignee ? task.assignee.name : 'Unassigned' }}</td>
+              <td><span class="badge badge-{{ task.status }}">{{ task.status.replace('_', ' ') }}</span></td>
+              <td><span class="badge badge-{{ task.priority }}">{{ task.priority }}</span></td>
+              <td class="text-muted text-sm">{{ task.dueDate ? task.dueDate.toFormat('MMM d, yyyy') : '—' }}</td>
+            </tr>
+          @end
+        </tbody>
+      </table>
+    @end
+  </div>
+</div>
+
+<!-- Meetings -->
+<div class="section-card">
+  <div class="section-card-header">
+    <span class="section-card-title"><iconify-icon icon="lucide:message-square" width="16" height="16"></iconify-icon> Meetings</span>
+  </div>
+  <div class="section-card-body">
+    @if(project.meetings.length === 0)
+      <p class="empty-msg">No meetings linked to this project.</p>
+    @else
+      @each(meeting in project.meetings)
+        <div class="meeting-row">
+          <a href="/history/{{ meeting.id }}" class="meeting-link">{{ meeting.title }}</a>
+          <span class="text-muted text-xs">{{ meeting.createdAt.toFormat('MMM d, yyyy') }}</span>
+        </div>
+      @end
+    @end
+  </div>
+</div>
+
+<form id="delete-project-form" method="POST" style="display:none;">
+  {{ csrfField() }}
+  <input type="hidden" name="_method" value="DELETE" />
+</form>
+
+<form id="remove-member-form" method="POST" style="display:none;">
+  {{ csrfField() }}
+  <input type="hidden" name="_method" value="DELETE" />
+</form>
+
+<form id="remove-status-form" method="POST" style="display:none;">
+  {{ csrfField() }}
+  <input type="hidden" name="_method" value="DELETE" />
+</form>
+
+<script>
+  function deleteProject(id) {
+    if (!confirm('Delete this project? This cannot be undone.')) return
+    const form = document.getElementById('delete-project-form')
+    form.action = '/projects/' + id + '?_method=DELETE'
+    form.submit()
+  }
+  function removeMember(projectId, userId) {
+    if (!confirm('Remove this member from the project?')) return
+    const form = document.getElementById('remove-member-form')
+    form.action = '/projects/' + projectId + '/members/' + userId + '?_method=DELETE'
+    form.submit()
+  }
+  function removeStatus(projectId, statusId) {
+    if (!confirm('Remove this status? Tasks with this status will remain but the column will disappear from the board.')) return
+    const form = document.getElementById('remove-status-form')
+    form.action = '/projects/' + projectId + '/statuses/' + statusId + '?_method=DELETE'
+    form.submit()
+  }
+</script>
+@end

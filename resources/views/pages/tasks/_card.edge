@@ -1,0 +1,45 @@
+<div class="task-card"
+     data-id="{{ task.id }}"
+     data-status="{{ task.status }}"
+     data-priority="{{ task.priority }}"
+     data-project="{{ task.projectId || '' }}">
+
+  <div class="card-top">
+    <div class="card-title">
+      <a href="/tasks/{{ task.id }}">{{ task.title }}</a>
+    </div>
+    <div class="card-actions">
+      <button class="move-btn" data-dir="prev" title="Move left"><iconify-icon icon="lucide:arrow-left" width="11" height="11"></iconify-icon></button>
+      <button class="move-btn" data-dir="next" title="Move right"><iconify-icon icon="lucide:arrow-right" width="11" height="11"></iconify-icon></button>
+      <button class="delete-btn-card" title="Delete"><iconify-icon icon="lucide:x" width="12" height="12"></iconify-icon></button>
+    </div>
+  </div>
+
+  <div class="card-meta">
+    @if(task.project)
+      <a href="/projects/{{ task.project.id }}" class="badge-project" title="{{ task.project.name }}">{{ task.project.name }}</a>
+    @else
+      <span></span>
+    @end
+
+    <span class="badge-priority {{ task.priority }}">{{ task.priority }}</span>
+
+    @if(task.dueDate)
+      <span class="due-date"><iconify-icon icon="lucide:calendar" width="10" height="10"></iconify-icon> {{ task.dueDate.toFormat('MMM d') }}</span>
+    @end
+  </div>
+
+  <div class="assignee-row">
+    <div class="avatar-xs">
+      {{ task.assignee ? (task.assignee.avatarInitials || task.assignee.name.slice(0,2).toUpperCase()) : '?' }}
+    </div>
+    <select class="assignee-select" title="Assign to">
+      <option value="">— Unassigned</option>
+      @each(u in users)
+        <option value="{{ u.id }}" {{ task.assignee && task.assignee.id === u.id ? 'selected' : '' }}>{{ u.name }}</option>
+      @end
+    </select>
+    <span style="color:var(--muted);font-size:11px;pointer-events:none;display:flex;align-items:center;"><iconify-icon icon="lucide:chevron-down" width="11" height="11"></iconify-icon></span>
+  </div>
+
+</div>

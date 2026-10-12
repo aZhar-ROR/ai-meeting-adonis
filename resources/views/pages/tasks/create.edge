@@ -1,0 +1,91 @@
+@layout('layouts/app')
+
+@section('content')
+<style>
+  .page-header { margin-bottom: 28px; }
+  .page-title { font-size: 22px; font-weight: 700; }
+  .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 32px; max-width: 600px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-actions { display: flex; gap: 12px; margin-top: 24px; }
+</style>
+
+<div class="page-header">
+  <a href="/tasks" class="text-muted text-sm" style="text-decoration:none;">← Back to Tasks</a>
+  <h1 class="page-title mt-8">New Task</h1>
+</div>
+
+@if(flashMessages.has('error'))
+  <div class="alert alert-error mb-16">
+    <span class="alert-icon">⚠️</span>
+    {{ flashMessages.get('error') }}
+  </div>
+@end
+
+<div class="form-card">
+  <form method="POST" action="/tasks">
+    {{ csrfField() }}
+
+    <div class="form-group">
+      <label class="form-label" for="title">Title <span style="color:var(--danger)">*</span></label>
+      <input type="text" id="title" name="title" class="form-control" placeholder="e.g. Implement login page" required />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="description">Description</label>
+      <textarea id="description" name="description" class="form-control" rows="3" placeholder="Optional task details..."></textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="projectId">Project</label>
+        <select id="projectId" name="projectId" class="form-control">
+          <option value="">— No project —</option>
+          @each(project in projects)
+            <option value="{{ project.id }}" {{ defaultProjectId && defaultProjectId == project.id ? 'selected' : '' }}>{{ project.name }}</option>
+          @end
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="assignedTo">Assign To</label>
+        <select id="assignedTo" name="assignedTo" class="form-control">
+          <option value="">— Unassigned —</option>
+          @each(user in users)
+            <option value="{{ user.id }}">{{ user.name }}</option>
+          @end
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="status">Status</label>
+        <select id="status" name="status" class="form-control">
+          <option value="pending">Pending</option>
+          <option value="in_progress">In Progress</option>
+          <option value="done">Done</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="priority">Priority</label>
+        <select id="priority" name="priority" class="form-control">
+          <option value="low">Low</option>
+          <option value="medium" selected>Medium</option>
+          <option value="high">High</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="dueDate">Due Date</label>
+      <input type="date" id="dueDate" name="dueDate" class="form-control" />
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Create Task</button>
+      <a href="/tasks" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+@end

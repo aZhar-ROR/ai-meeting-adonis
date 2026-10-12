@@ -1,0 +1,571 @@
+@layout('layouts/app')
+
+@section('content')
+<style>
+  /* ── Page header ── */
+  .page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; gap:12px; flex-wrap:wrap; }
+  .page-title  { font-size:22px; font-weight:700; }
+
+  /* ── View toggle ── */
+  .view-toggle {
+    display: flex;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .view-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 14px;
+    border: none; border-radius: 6px;
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; font-family: inherit;
+    color: var(--muted); background: transparent;
+    transition: background .15s, color .15s;
+  }
+  .view-btn.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+  .view-btn:hover:not(.active) { color: var(--text); }
+  .view-btn svg { width:15px; height:15px; flex-shrink:0; }
+
+  /* ── LIST view ── */
+  #view-list {}
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  table { width: 100%; border-collapse: collapse; }
+  th { padding: 11px 16px; text-align:left; font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; border-bottom:1px solid var(--border); background:var(--surface-2); }
+  td { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size:13px; vertical-align:middle; }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:var(--surface-2); }
+  .avatar-sm { width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:#fff; background:var(--accent); flex-shrink:0; }
+  .assignee-cell { display:flex; align-items:center; gap:8px; }
+
+  .badge-pending    { background:rgba(251,191,36,.12); color:#fbbf24; border:1px solid rgba(251,191,36,.2); }
+  .badge-in_progress{ background:rgba(96,165,250,.12); color:#60a5fa; border:1px solid rgba(96,165,250,.2); }
+  .badge-done       { background:rgba(52,211,153,.12); color:#34d399; border:1px solid rgba(52,211,153,.2); }
+  .badge-low    { background:var(--surface-2); color:var(--muted); border:1px solid var(--border); }
+  .badge-medium { background:rgba(251,191,36,.12); color:#fbbf24; border:1px solid rgba(251,191,36,.2); }
+  .badge-high   { background:rgba(248,113,113,.12); color:#f87171; border:1px solid rgba(248,113,113,.2); }
+  .badge-project{ background:var(--accent-light); color:var(--accent); text-decoration:none; border:1px solid rgba(56,189,248,.2); }
+
+  /* inline selects in table */
+  .inline-select {
+    font-size:12px; padding:4px 8px; border-radius:6px;
+    border:1px solid var(--border); background:var(--surface-2);
+    color:var(--text); font-family:inherit; cursor:pointer; outline:none;
+  }
+  .inline-select:focus { border-color:var(--accent); }
+
+  .btn-danger-sm { background:rgba(248,113,113,.08); color:var(--danger); border:1px solid rgba(248,113,113,.2); font-size:12px; padding:4px 10px; border-radius:6px; cursor:pointer; font-family:inherit; }
+  .btn-danger-sm:hover { background:rgba(248,113,113,.15); border-color:rgba(248,113,113,.35); }
+  .empty-state { text-align:center; padding:60px 24px; color:var(--muted); }
+  .empty-icon  { font-size:48px; margin-bottom:16px; }
+
+  /* ── BOARD view ── */
+  #view-board { display:none; } /* hidden until JS decides */
+  .kanban-board { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; align-items:start; }
+  .kanban-col { background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:14px; min-height:200px; transition:background .15s; }
+  .kanban-col.drag-over { background:var(--accent-light); border-color:var(--accent); }
+  .col-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .col-title { display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
+  .col-count { background:var(--surface); border:1px solid var(--border); color:var(--muted); font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px; min-width:22px; text-align:center; }
+  .dot { width:9px; height:9px; border-radius:50%; }
+  .dot-pending  { background:#f59e0b; }
+  .dot-progress { background:#3b82f6; }
+  .dot-done     { background:#10b981; }
+
+  /* Card */
+  .task-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:13px; margin-bottom:10px; cursor:grab; transition:box-shadow .15s, transform .1s, border-color .15s; }
+  .task-card:hover { box-shadow:var(--shadow-md); border-color:var(--border-2); }
+  .task-card.dragging { opacity:.4; transform:rotate(1.5deg); cursor:grabbing; }
+  .task-card:last-child { margin-bottom:0; }
+  .task-card[data-priority="high"]   { border-left:3px solid #ef4444; }
+  .task-card[data-priority="medium"] { border-left:3px solid #f59e0b; }
+  .task-card[data-priority="low"]    { border-left:3px solid #94a3b8; }
+
+  .card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:9px; }
+  .card-title { font-size:13px; font-weight:600; color:var(--text); line-height:1.4; flex:1; }
+  .card-title a { text-decoration:none; color:inherit; }
+  .card-title a:hover { color:var(--accent); }
+  .card-meta { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .badge-project-sm { display:inline-block; background:var(--accent-light); color:var(--accent); font-size:10px; font-weight:600; padding:2px 7px; border-radius:99px; text-decoration:none; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .badge-pri { font-size:10px; font-weight:600; padding:2px 7px; border-radius:99px; text-transform:capitalize; }
+  .badge-pri.low    { background:var(--surface-2); color:var(--muted); border:1px solid var(--border); }
+  .badge-pri.medium { background:rgba(251,191,36,.12); color:#fbbf24; border:1px solid rgba(251,191,36,.2); }
+  .badge-pri.high   { background:rgba(248,113,113,.12); color:#f87171; border:1px solid rgba(248,113,113,.2); }
+  .due-sm { font-size:10px; color:var(--muted); }
+
+  .assignee-row { display:flex; align-items:center; gap:7px; margin-top:9px; padding-top:9px; border-top:1px solid var(--border); }
+  .avatar-xs { width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:8px; font-weight:700; color:#fff; background:var(--accent); flex-shrink:0; }
+  .assignee-select-card { flex:1; font-size:11px; color:var(--text); background:transparent; border:none; outline:none; cursor:pointer; font-family:inherit; padding:0; appearance:none; -webkit-appearance:none; }
+
+  .card-actions { display:flex; gap:3px; }
+  .move-btn { background:transparent; border:1px solid var(--border); color:var(--muted); font-size:11px; padding:2px 6px; border-radius:5px; cursor:pointer; font-family:inherit; transition:background .12s, color .12s; }
+  .move-btn:hover { background:var(--surface-2); color:var(--text); }
+  .delete-btn-card { background:transparent; border:none; color:var(--muted); cursor:pointer; font-size:14px; padding:1px 5px; border-radius:4px; transition:color .12s; line-height:1; }
+  .delete-btn-card:hover { color:#ef4444; }
+
+  .col-add-btn { display:flex; align-items:center; justify-content:center; gap:5px; width:100%; margin-top:10px; padding:8px; border:1.5px dashed var(--border-2); border-radius:8px; background:transparent; color:var(--muted); font-size:12px; font-weight:500; cursor:pointer; font-family:inherit; text-decoration:none; transition:border-color .15s, color .15s, background .15s; }
+  .col-add-btn:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-light); }
+  .col-empty { text-align:center; padding:22px 12px; color:var(--muted); font-size:12px; }
+
+  /* ── Project filter ── */
+  .filter-bar { display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+  .filter-select { font-size:13px; padding:6px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-family:inherit; cursor:pointer; outline:none; min-width:160px; }
+  .filter-select:focus { border-color:var(--accent); }
+  .filter-badge { font-size:12px; color:var(--muted); padding:4px 0; }
+
+  /* ── Toast ── */
+  #toast { position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--surface-3); color:var(--text); border:1px solid var(--border-2); padding:10px 22px; border-radius:9px; font-size:13px; font-weight:500; box-shadow:0 8px 24px rgba(0,0,0,.5); transition:transform .25s ease; z-index:999; pointer-events:none; }
+  #toast.show { transform:translateX(-50%) translateY(0); }
+
+  @media (max-width:900px) { .kanban-board { grid-template-columns:1fr; } }
+</style>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Tasks</h1>
+    <p class="text-muted text-sm" style="margin-top:4px;" id="view-hint">All tasks</p>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <!-- View toggle -->
+    <div class="view-toggle">
+      <button class="view-btn active" id="btn-list" onclick="setView('list')">
+        <iconify-icon icon="lucide:list" width="16" height="16"></iconify-icon>
+        List
+      </button>
+      <button class="view-btn" id="btn-board" onclick="setView('board')">
+        <iconify-icon icon="lucide:layout-dashboard" width="16" height="16"></iconify-icon>
+        Board
+      </button>
+    </div>
+    <a href="/tasks/create" class="btn btn-primary">+ New Task</a>
+  </div>
+</div>
+
+{{-- Hidden CSRF / data --}}
+<input type="hidden" id="csrf-token" value="{{ csrfToken }}" />
+<form id="delete-form" method="POST" style="display:none;">
+  {{ csrfField() }}
+  <input type="hidden" name="_method" value="DELETE" />
+</form>
+<script id="users-data" type="application/json">
+{{{ JSON.stringify(users.map(u => ({ id: u.id, name: u.name, initials: u.avatarInitials || u.name.slice(0,2).toUpperCase() }))) }}}
+</script>
+<script id="projects-data" type="application/json">
+{{{ JSON.stringify(projects.map(p => ({ id: p.id, name: p.name }))) }}}
+</script>
+<script id="statuses-by-project" type="application/json">
+{{{ JSON.stringify(statusesByProject) }}}
+</script>
+
+{{-- Filter bar --}}
+<div class="filter-bar">
+  <select class="filter-select" id="project-filter">
+    <option value="">All Projects</option>
+    @each(p in projects)
+      <option value="{{ p.id }}">{{ p.name }}</option>
+    @end
+  </select>
+  <span class="filter-badge" id="filter-count"></span>
+</div>
+
+{{-- ════════════════════════════════════════════════════════ --}}
+{{-- LIST VIEW                                               --}}
+{{-- ════════════════════════════════════════════════════════ --}}
+<div id="view-list">
+  @if(tasks.length === 0)
+    <div class="table-wrap">
+      <div class="empty-state">
+        <div class="empty-icon"><iconify-icon icon="lucide:check-square" width="48" height="48"></iconify-icon></div>
+        <p class="fw-600 mb-8">No tasks yet</p>
+        <a href="/tasks/create" class="btn btn-primary mt-16">New Task</a>
+      </div>
+    </div>
+  @else
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Project</th>
+            <th>Assignee</th>
+            <th>Status</th>
+            <th>Priority</th>
+            <th>Due</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="list-body">
+          @each(task in tasks)
+            <tr data-task-id="{{ task.id }}" data-project="{{ task.projectId || '' }}">
+              <td>
+                <a href="/tasks/{{ task.id }}" style="text-decoration:none;color:var(--text);font-weight:500;">{{ task.title }}</a>
+              </td>
+              <td>
+                @if(task.project)
+                  <a href="/projects/{{ task.project.id }}" class="badge badge-project">{{ task.project.name }}</a>
+                @else
+                  <span class="text-muted">—</span>
+                @end
+              </td>
+              <td>
+                <div class="assignee-cell">
+                  <div class="avatar-sm list-avatar" data-task="{{ task.id }}">
+                    {{ task.assignee ? (task.assignee.avatarInitials || task.assignee.name.slice(0,2).toUpperCase()) : '?' }}
+                  </div>
+                  <select class="inline-select list-assignee-select" data-task="{{ task.id }}">
+                    <option value="">— Unassigned</option>
+                    @each(u in users)
+                      <option value="{{ u.id }}" {{ task.assignee && task.assignee.id === u.id ? 'selected' : '' }}>{{ u.name }}</option>
+                    @end
+                  </select>
+                </div>
+              </td>
+              <td>
+                <select class="inline-select list-status-select" data-task="{{ task.id }}" data-current-status="{{ task.status }}">
+                  <option value="pending"     {{ task.status === 'pending'     ? 'selected' : '' }}>Pending</option>
+                  <option value="in_progress" {{ task.status === 'in_progress' ? 'selected' : '' }}>In Progress</option>
+                  <option value="done"        {{ task.status === 'done'        ? 'selected' : '' }}>Done</option>
+                </select>
+              </td>
+              <td>
+                <select class="inline-select list-priority-select" data-task="{{ task.id }}">
+                  <option value="low"    {{ task.priority === 'low'    ? 'selected' : '' }}>Low</option>
+                  <option value="medium" {{ task.priority === 'medium' ? 'selected' : '' }}>Medium</option>
+                  <option value="high"   {{ task.priority === 'high'   ? 'selected' : '' }}>High</option>
+                </select>
+              </td>
+              <td class="text-muted text-sm">{{ task.dueDate ? task.dueDate.toFormat('MMM d, yy') : '—' }}</td>
+              <td>
+                <button class="btn-danger-sm list-delete-btn" data-task="{{ task.id }}">Delete</button>
+              </td>
+            </tr>
+          @end
+        </tbody>
+      </table>
+    </div>
+  @end
+</div>
+
+{{-- ════════════════════════════════════════════════════════ --}}
+{{-- BOARD VIEW (columns built by JS)                        --}}
+{{-- ════════════════════════════════════════════════════════ --}}
+<div id="view-board">
+  <div class="kanban-board" id="kanban"></div>
+</div>
+
+{{-- Hidden card pool — all cards rendered here, JS moves them into columns --}}
+<div id="card-pool" style="display:none;">
+  @each(task in tasks)
+    @include('pages/tasks/_card')
+  @end
+</div>
+
+<div id="toast"></div>
+
+<script>
+(function () {
+  const CSRF             = document.getElementById('csrf-token').value
+  const USERS            = JSON.parse(document.getElementById('users-data').textContent)
+  const PROJECTS         = JSON.parse(document.getElementById('projects-data').textContent)
+  const STATUSES_BY_PROJ = JSON.parse(document.getElementById('statuses-by-project').textContent)
+
+  const DEFAULT_STATUSES = [
+    { slug: 'pending',     name: 'Pending',     color: '#f59e0b' },
+    { slug: 'in_progress', name: 'In Progress', color: '#3b82f6' },
+    { slug: 'done',        name: 'Done',        color: '#10b981' },
+  ]
+
+  // ── Toast ──────────────────────────────────────────────────────
+  let toastTimer
+  function showToast(msg) {
+    const t = document.getElementById('toast')
+    t.textContent = msg; t.classList.add('show')
+    clearTimeout(toastTimer)
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2200)
+  }
+
+  // ── API helper ─────────────────────────────────────────────────
+  async function patchTask(id, body) {
+    const res = await fetch('/tasks/' + id, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF },
+      body: JSON.stringify(body),
+    })
+    if (!res.ok) throw new Error('fail')
+    return res.json()
+  }
+
+  // ── Board builder ──────────────────────────────────────────────
+  let currentOrder = [] // slug order for the active board
+  let dragCard = null
+
+  function buildBoard(pid) {
+    const statuses = pid && STATUSES_BY_PROJ[pid]
+      ? STATUSES_BY_PROJ[pid]
+      : DEFAULT_STATUSES
+    currentOrder = statuses.map(s => s.slug)
+
+    const pool  = document.getElementById('card-pool')
+    const board = document.getElementById('kanban')
+
+    // Move all cards back to pool
+    board.querySelectorAll('.task-card').forEach(c => pool.appendChild(c))
+    board.innerHTML = ''
+
+    statuses.forEach(st => {
+      const col = document.createElement('div')
+      col.className = 'kanban-col'
+      col.dataset.status = st.slug
+      col.id = 'col-' + st.slug
+      col.innerHTML = `
+        <div class="col-header">
+          <div class="col-title">
+            <span class="dot" style="background:${st.color}"></span> ${st.name}
+          </div>
+          <span class="col-count" id="count-${st.slug}">0</span>
+        </div>
+        <div class="card-zone"></div>
+        <a href="/tasks/create${pid ? '?project_id=' + pid : ''}" class="col-add-btn"><iconify-icon icon="lucide:plus" width="13" height="13"></iconify-icon> Add task</a>
+      `
+      setupColDrag(col)
+      board.appendChild(col)
+    })
+
+    // Place matching cards into columns
+    const allCards = [...pool.querySelectorAll('.task-card')]
+    allCards.forEach(card => {
+      const match = !pid || card.dataset.project == pid
+      if (!match) return
+      const zone = document.querySelector('#col-' + card.dataset.status + ' .card-zone')
+      if (zone) zone.appendChild(card)
+    })
+
+    // Init cards and update UI
+    board.querySelectorAll('.task-card').forEach(card => {
+      initDrag(card)
+      updateMoveBtns(card)
+      initCardEvents(card)
+    })
+    currentOrder.forEach(st => updateEmpty(st))
+    updateCounts()
+  }
+
+  function setupColDrag(col) {
+    col.addEventListener('dragover',  e => { e.preventDefault(); col.classList.add('drag-over') })
+    col.addEventListener('dragleave', e => { if (!col.contains(e.relatedTarget)) col.classList.remove('drag-over') })
+    col.addEventListener('drop', async e => {
+      e.preventDefault(); col.classList.remove('drag-over')
+      if (!dragCard) return
+      const newStatus = col.dataset.status
+      const oldStatus = dragCard.dataset.status
+      if (newStatus === oldStatus) return
+      const taskId = dragCard.dataset.id
+      col.querySelector('.card-zone').appendChild(dragCard)
+      dragCard.dataset.status = newStatus
+      updateEmpty(oldStatus); updateEmpty(newStatus); updateCounts(); updateMoveBtns(dragCard)
+      try { await patchTask(taskId, { status: newStatus }); showToast('Moved to ' + newStatus.replace('_',' ')) }
+      catch {
+        document.querySelector('#col-' + oldStatus + ' .card-zone').appendChild(dragCard)
+        dragCard.dataset.status = oldStatus
+        updateEmpty(oldStatus); updateEmpty(newStatus); updateCounts(); updateMoveBtns(dragCard)
+        showToast('⚠ Failed')
+      }
+    })
+  }
+
+  function initDrag(card) {
+    card.setAttribute('draggable', 'true')
+    card.addEventListener('dragstart', e => { dragCard = card; card.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move' })
+    card.addEventListener('dragend',   () => { card.classList.remove('dragging'); document.querySelectorAll('.kanban-col').forEach(c => c.classList.remove('drag-over')); dragCard = null })
+  }
+
+  function initCardEvents(card) {
+    // Move buttons
+    card.querySelectorAll('.move-btn').forEach(btn => {
+      btn.onclick = async (e) => {
+        e.stopPropagation()
+        const cur = card.dataset.status
+        const idx = currentOrder.indexOf(cur)
+        const newStatus = btn.dataset.dir === 'next' ? currentOrder[idx + 1] : currentOrder[idx - 1]
+        if (!newStatus) return
+        const taskId = card.dataset.id
+        document.querySelector('#col-' + newStatus + ' .card-zone').appendChild(card)
+        card.dataset.status = newStatus
+        updateEmpty(cur); updateEmpty(newStatus); updateCounts(); updateMoveBtns(card)
+        try { await patchTask(taskId, { status: newStatus }); showToast('Moved to ' + newStatus.replace('_',' ')) }
+        catch {
+          document.querySelector('#col-' + cur + ' .card-zone').appendChild(card)
+          card.dataset.status = cur
+          updateEmpty(cur); updateEmpty(newStatus); updateCounts(); updateMoveBtns(card)
+          showToast('⚠ Failed')
+        }
+      }
+    })
+
+    // Assignee
+    const assignSel = card.querySelector('.assignee-select-card')
+    if (assignSel) {
+      assignSel.onchange = async () => {
+        const uid = assignSel.value || null
+        const av  = card.querySelector('.avatar-xs')
+        const u   = USERS.find(x => x.id == uid)
+        if (av) av.textContent = u ? u.initials : '?'
+        try { await patchTask(card.dataset.id, { assignedTo: uid }); showToast(u ? 'Assigned to ' + u.name : 'Unassigned') }
+        catch { showToast('⚠ Failed') }
+      }
+    }
+
+    // Delete
+    const delBtn = card.querySelector('.delete-btn-card')
+    if (delBtn) {
+      delBtn.onclick = (e) => {
+        e.stopPropagation()
+        if (!confirm('Delete this task?')) return
+        const form = document.getElementById('delete-form')
+        form.action = '/tasks/' + card.dataset.id + '?_method=DELETE'
+        form.submit()
+      }
+    }
+  }
+
+  function updateCounts() {
+    currentOrder.forEach(st => {
+      const el = document.getElementById('count-' + st)
+      if (el) el.textContent = document.querySelectorAll('#col-' + st + ' .task-card').length
+    })
+  }
+
+  function updateEmpty(st) {
+    const col  = document.getElementById('col-' + st)
+    if (!col) return
+    const zone = col.querySelector('.card-zone')
+    let   el   = col.querySelector('.col-empty')
+    const isEmpty = !zone || zone.querySelectorAll('.task-card').length === 0
+    if (!el) {
+      el = document.createElement('div')
+      el.className = 'col-empty'
+      col.insertBefore(el, col.querySelector('.col-add-btn'))
+    }
+    el.textContent = 'No tasks'
+    el.style.display = isEmpty ? '' : 'none'
+  }
+
+  function updateMoveBtns(card) {
+    const idx = currentOrder.indexOf(card.dataset.status)
+    const p = card.querySelector('[data-dir="prev"]')
+    const n = card.querySelector('[data-dir="next"]')
+    if (p) p.style.display = idx <= 0 ? 'none' : ''
+    if (n) n.style.display = idx >= currentOrder.length - 1 ? 'none' : ''
+  }
+
+  // ── View toggle ────────────────────────────────────────────────
+  function setView(v) {
+    const isList = v === 'list'
+    document.getElementById('view-list').style.display  = isList ? 'block' : 'none'
+    document.getElementById('view-board').style.display = isList ? 'none'  : 'block'
+    document.getElementById('btn-list').classList.toggle('active', isList)
+    document.getElementById('btn-board').classList.toggle('active', !isList)
+    document.getElementById('view-hint').textContent = isList
+      ? 'All tasks'
+      : 'Drag cards to update status · Click assignee to reassign'
+    try { localStorage.setItem('tasks-view', v) } catch {}
+  }
+  window.setView = setView
+
+  // ── Status dropdown rebuild ────────────────────────────────────
+  // pid = project filter (may be empty); each row falls back to its own task's project
+  function rebuildStatusDropdowns(pid) {
+    document.querySelectorAll('#list-body tr[data-task-id]').forEach(row => {
+      const sel = row.querySelector('.list-status-select')
+      if (!sel) return
+      const effectivePid = pid || row.dataset.project
+      const statuses = effectivePid && STATUSES_BY_PROJ[effectivePid]
+        ? STATUSES_BY_PROJ[effectivePid]
+        : DEFAULT_STATUSES
+      const current = sel.dataset.currentStatus || sel.value
+      sel.innerHTML = statuses.map(st =>
+        `<option value="${st.slug}" ${current === st.slug ? 'selected' : ''}>${st.name}</option>`
+      ).join('')
+    })
+  }
+
+  // ── Project filter ─────────────────────────────────────────────
+  function applyProjectFilter(pid) {
+    // List view: show/hide rows
+    let visibleList = 0
+    document.querySelectorAll('#list-body tr[data-task-id]').forEach(row => {
+      const match = !pid || row.dataset.project == pid
+      row.style.display = match ? '' : 'none'
+      if (match) visibleList++
+    })
+
+    rebuildStatusDropdowns(pid)
+
+    // Board: rebuild columns for this project
+    buildBoard(pid)
+
+    // Badge + hint
+    const proj  = pid ? PROJECTS.find(p => p.id == pid) : null
+    const total = pid ? [...document.querySelectorAll('#card-pool .task-card, #kanban .task-card')].filter(c => c.dataset.project == pid).length
+                      : document.querySelectorAll('#card-pool .task-card, #kanban .task-card').length
+    document.getElementById('filter-count').textContent = proj
+      ? proj.name + ' · ' + total + ' task' + (total !== 1 ? 's' : '')
+      : (document.querySelectorAll('#list-body tr[data-task-id]:not([style*="display: none"]):not([style*="display:none"])').length + ' task' + (visibleList !== 1 ? 's' : '') + ' total')
+    document.getElementById('view-hint').textContent = proj
+      ? 'Filtered: ' + proj.name
+      : document.getElementById('view-hint').textContent
+
+    try { if (pid) localStorage.setItem('tasks-project', pid); else localStorage.removeItem('tasks-project') } catch {}
+  }
+
+  const projectFilter = document.getElementById('project-filter')
+  projectFilter.addEventListener('change', () => applyProjectFilter(projectFilter.value))
+
+  // ── LIST events ────────────────────────────────────────────────
+  document.querySelectorAll('.list-assignee-select').forEach(sel => {
+    sel.addEventListener('change', async () => {
+      const id = sel.dataset.task, uid = sel.value || null
+      const av = document.querySelector('.list-avatar[data-task="' + id + '"]')
+      const u  = USERS.find(x => x.id == uid)
+      if (av) av.textContent = u ? u.initials : '?'
+      try { await patchTask(id, { assignedTo: uid }); showToast(u ? 'Assigned to ' + u.name : 'Unassigned') }
+      catch { showToast('⚠ Failed') }
+    })
+  })
+  document.querySelectorAll('.list-status-select').forEach(sel => {
+    sel.addEventListener('change', async () => {
+      try { await patchTask(sel.dataset.task, { status: sel.value }); showToast('Status → ' + sel.value.replace('_',' ')) }
+      catch { showToast('⚠ Failed') }
+    })
+  })
+  document.querySelectorAll('.list-priority-select').forEach(sel => {
+    sel.addEventListener('change', async () => {
+      try { await patchTask(sel.dataset.task, { priority: sel.value }); showToast('Priority → ' + sel.value) }
+      catch { showToast('⚠ Failed') }
+    })
+  })
+  document.querySelectorAll('.list-delete-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!confirm('Delete this task?')) return
+      const form = document.getElementById('delete-form')
+      form.action = '/tasks/' + btn.dataset.task + '?_method=DELETE'
+      form.submit()
+    })
+  })
+
+  // ── Init ───────────────────────────────────────────────────────
+  const savedView    = (() => { try { return localStorage.getItem('tasks-view')    } catch { return null } })()
+  const savedProject = (() => { try { return localStorage.getItem('tasks-project') } catch { return null } })()
+
+  setView(savedView === 'board' ? 'board' : 'list')
+
+  if (savedProject) {
+    projectFilter.value = savedProject
+    applyProjectFilter(savedProject)
+  } else {
+    applyProjectFilter('')
+  }
+})()
+</script>
+@end

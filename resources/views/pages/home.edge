@@ -1,0 +1,261 @@
+@layout('layouts/app')
+
+@section('content')
+<style>
+  /* ── Hero ── */
+  .hero {
+    padding: 28px 0 32px;
+  }
+  .hero-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent-light);
+    border: 1px solid rgba(56,189,248,.25);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 99px;
+    margin-bottom: 18px;
+  }
+  .hero h1 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -.03em;
+    color: var(--text);
+    margin-bottom: 10px;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+  .hero h1 span {
+    background: linear-gradient(90deg, var(--accent), #818cf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero p {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.7;
+    white-space: nowrap;
+  }
+
+  /* ── Transcript panel ── */
+  .transcript-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .transcript-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .transcript-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .toolbar-actions { display: flex; gap: 6px; }
+  .tool-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    background: var(--surface-2);
+    border: 1px solid var(--border-2);
+    color: var(--muted);
+    transition: background .15s, color .15s, border-color .15s;
+  }
+  .tool-btn:hover { background: var(--surface-3); color: var(--text); border-color: var(--muted); }
+
+  .transcript-body { padding: 0; flex: 1; }
+  .transcript-area {
+    width: 100%;
+    min-height: 340px;
+    padding: 18px 20px;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-size: 13px;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    line-height: 1.7;
+    resize: vertical;
+    outline: none;
+  }
+  .transcript-area::placeholder { color: var(--muted); opacity: .6; }
+
+  .transcript-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    background: var(--surface-2);
+  }
+  .char-count { font-size: 11px; color: var(--muted); }
+
+  /* Submit */
+  .submit-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 28px;
+    background: var(--accent);
+    color: #05090f;
+    font-size: 14px;
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: -.01em;
+    transition: background .15s, box-shadow .15s, transform .1s;
+    white-space: nowrap;
+  }
+  .submit-btn:hover {
+    background: var(--accent-hover);
+    box-shadow: 0 0 0 1px rgba(56,189,248,.4), 0 4px 20px rgba(56,189,248,.25);
+  }
+  .submit-btn:active { transform: translateY(1px); }
+</style>
+
+<div class="hero">
+  <div class="hero-chip">
+    <iconify-icon icon="lucide:zap" width="11" height="11"></iconify-icon>
+    AI-Powered Analysis
+  </div>
+  <h1>Turn meetings into <span>structured insights</span></h1>
+  <p>Paste any meeting transcript and extract decisions, action items, open questions and follow-ups — instantly.</p>
+</div>
+
+@if(flashMessages.has('error'))
+<div class="alert alert-error" style="margin-bottom:20px;">
+  <iconify-icon icon="lucide:alert-triangle" width="16" height="16"></iconify-icon>
+  <span>{{ flashMessages.get('error') }}</span>
+</div>
+@end
+
+<form action="/analyze" method="POST">
+  {{ csrfField() }}
+  <input type="hidden" name="model" value="gemini-3.8-flash" />
+  <input type="hidden" name="prompt_version" value="3" />
+
+    <!-- Transcript panel -->
+    <div class="transcript-panel">
+      <div class="transcript-toolbar">
+        <div class="transcript-title">
+          <iconify-icon icon="lucide:file-text" width="15" height="15" style="color:var(--accent)"></iconify-icon>
+          Meeting Transcript
+        </div>
+        <div class="toolbar-actions">
+          <button type="button" class="tool-btn" onclick="loadSample()">
+            <iconify-icon icon="lucide:download" width="12" height="12"></iconify-icon> Load sample
+          </button>
+          <button type="button" class="tool-btn" onclick="clearTranscript()">
+            <iconify-icon icon="lucide:x" width="12" height="12"></iconify-icon> Clear
+          </button>
+        </div>
+      </div>
+
+      <div class="transcript-body">
+        <textarea
+          id="transcript"
+          name="transcript"
+          class="transcript-area"
+          placeholder="Paste your meeting transcript here...
+
+Example:
+John: Let's start the Q3 planning meeting.
+Sarah: I think we should prioritize the mobile app redesign.
+John: Agreed, we'll go with the new design system..."
+          oninput="updateCount()"
+        ></textarea>
+      </div>
+
+      <div class="transcript-footer">
+        <span class="char-count" id="charCount">0 characters</span>
+        <button type="submit" class="submit-btn">
+          <iconify-icon icon="lucide:brain" width="16" height="16"></iconify-icon>
+          Analyze Meeting
+        </button>
+      </div>
+    </div>
+
+</form>
+
+<template id="sample-transcript">Q3 Planning Meeting - August 15, 2024
+
+Attendees: Sarah Chen (PM), James Okafor (Engineering Lead), Priya Sharma (Designer), Tom Walsh (Marketing)
+
+Sarah: Alright everyone, let's kick off the Q3 planning session. We have a lot to get through today.
+
+James: Before we start, I want to flag that our backend infrastructure is under real strain. We saw some 503 errors last week during peak hours.
+
+Sarah: That's critical. Let's decide right now — James, can you own a scaling audit by end of next week?
+
+James: Yes, I'll own that. I'll have a full capacity report by August 22nd.
+
+Priya: I also want to bring up the mobile app redesign. We've been discussing it for two quarters now.
+
+Sarah: We've decided to move forward with the redesign. Priya, please finalize the design mockups by August 25th.
+
+Priya: Absolutely. I'll prioritize high-traffic screens first.
+
+Tom: From a marketing perspective, we need landing pages before the redesign launches. When does engineering need copy?
+
+James: I'll need all copy by September 1st to hit our October launch window.
+
+Tom: I'll get you the copy by September 1st. I own that.
+
+Sarah: Good. What about the API integration with Salesforce? Has that been resolved?
+
+James: Not yet — we're still waiting on their dev team to respond to our questions.
+
+Sarah: That's an open question then. Can someone follow up with Salesforce next week?
+
+Priya: I'll add it to the follow-up list, but James should own the technical follow-up.
+
+James: Agreed, I'll ping their team Monday.
+
+Sarah: Let's also align on our Q3 OKRs. We agreed last month on 20% DAU growth. Are we confident?
+
+Tom: I'm not sure the redesign timeline gives us enough time to see impact in Q3. We should revisit this.
+
+Sarah: Let's park it for now and revisit after Priya's mockups are shared.
+
+Sarah: Wrapping up — main decisions: scaling audit owned by James, redesign approved and design by Priya, copy deadline set for Tom. Action items clear. Let's reconvene next Friday.</template>
+
+<script>
+function loadSample() {
+  const tpl = document.getElementById('sample-transcript');
+  document.getElementById('transcript').value = tpl.innerHTML.trim();
+  updateCount();
+}
+function clearTranscript() {
+  document.getElementById('transcript').value = '';
+  updateCount();
+}
+function updateCount() {
+  const len = document.getElementById('transcript').value.length;
+  document.getElementById('charCount').textContent = len.toLocaleString() + ' characters';
+}
+</script>
+@end

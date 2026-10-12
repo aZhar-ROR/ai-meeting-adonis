@@ -1,0 +1,75 @@
+@layout('layouts/app')
+
+@section('content')
+<style>
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+  .page-title { font-size: 22px; font-weight: 700; }
+  .projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+  .project-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; text-decoration: none; color: var(--text); display: block; transition: box-shadow .15s, border-color .15s; }
+  .project-card:hover { box-shadow: var(--shadow-glow); border-color: rgba(56,189,248,.25); }
+  .project-card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+  .project-name { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .project-desc { font-size: 13px; color: var(--muted); margin-bottom: 16px; line-height: 1.5; }
+  .project-meta { display: flex; gap: 16px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--border); padding-top: 14px; margin-top: auto; }
+  .project-stat { display: flex; align-items: center; gap: 4px; }
+  .badge-active { background: rgba(52,211,153,.12); color: #34d399; border: 1px solid rgba(52,211,153,.2); }
+  .badge-archived { background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); }
+  .empty-state { text-align: center; padding: 60px 24px; color: var(--muted); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+  .empty-icon { font-size: 48px; margin-bottom: 16px; }
+</style>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Projects</h1>
+    <p class="text-muted text-sm mt-8">Organize meetings and tasks by project</p>
+  </div>
+  <a href="/projects/create" class="btn btn-primary">+ New Project</a>
+</div>
+
+@if(flashMessages.has('success'))
+  <div class="alert alert-success">
+    <iconify-icon icon="lucide:check-circle" width="16" height="16"></iconify-icon> {{ flashMessages.get('success') }}
+  </div>
+@end
+
+@if(flashMessages.has('error'))
+  <div class="alert alert-error">
+    <span class="alert-icon"><iconify-icon icon="lucide:alert-triangle" width="16" height="16"></iconify-icon></span>
+    {{ flashMessages.get('error') }}
+  </div>
+@end
+
+@if(projects.length === 0)
+  <div class="empty-state">
+    <div class="empty-icon"><iconify-icon icon="lucide:folder" width="48" height="48"></iconify-icon></div>
+    <p class="fw-600 mb-8">No projects yet</p>
+    <p class="text-sm">Create your first project to organize your work.</p>
+    <a href="/projects/create" class="btn btn-primary mt-16">Create Project</a>
+  </div>
+@else
+  <div class="projects-grid">
+    @each(project in projects)
+      <a href="/projects/{{ project.id }}" class="project-card">
+        <div class="project-card-header">
+          <div class="project-name">{{ project.name }}</div>
+          @if(project.status === 'active')
+            <span class="badge badge-active">Active</span>
+          @else
+            <span class="badge badge-archived">Archived</span>
+          @end
+        </div>
+        @if(project.description)
+          <p class="project-desc">{{ project.description }}</p>
+        @else
+          <p class="project-desc" style="font-style:italic;">No description</p>
+        @end
+        <div class="project-meta">
+          <span class="project-stat"><iconify-icon icon="lucide:users" width="14" height="14"></iconify-icon> {{ project.$extras.members_count || 0 }} members</span>
+          <span class="project-stat"><iconify-icon icon="lucide:check-square" width="14" height="14"></iconify-icon> {{ project.$extras.tasks_count || 0 }} tasks</span>
+          <span class="project-stat"><iconify-icon icon="lucide:calendar" width="14" height="14"></iconify-icon> {{ project.createdAt.toFormat('MMM d') }}</span>
+        </div>
+      </a>
+    @end
+  </div>
+@end
+@end

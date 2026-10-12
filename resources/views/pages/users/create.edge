@@ -1,0 +1,52 @@
+@layout('layouts/app')
+
+@section('content')
+<style>
+  .page-header { margin-bottom: 28px; }
+  .page-title { font-size: 22px; font-weight: 700; }
+  .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 32px; max-width: 560px; }
+  .form-actions { display: flex; gap: 12px; margin-top: 24px; }
+</style>
+
+<div class="page-header">
+  <a href="/users" class="text-muted text-sm" style="text-decoration:none;">← Back to Users</a>
+  <h1 class="page-title mt-8">New User</h1>
+</div>
+
+@if(flashMessages.has('error'))
+  <div class="alert alert-error mb-16">
+    <span class="alert-icon">⚠️</span>
+    {{ flashMessages.get('error') }}
+  </div>
+@end
+
+<div class="form-card">
+  <form method="POST" action="/users">
+    {{ csrfField() }}
+
+    <div class="form-group">
+      <label class="form-label" for="name">Full Name <span style="color:var(--danger)">*</span></label>
+      <input type="text" id="name" name="name" class="form-control" placeholder="e.g. Jane Smith" required />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="email">Email Address <span style="color:var(--danger)">*</span></label>
+      <input type="email" id="email" name="email" class="form-control" placeholder="e.g. jane@company.com" required />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="role">Role</label>
+      <select id="role" name="role" class="form-control">
+        <option value="developer">Developer</option>
+        <option value="manager">Manager</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Create User</button>
+      <a href="/users" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+@end

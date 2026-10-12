@@ -1,0 +1,415 @@
+@layout('layouts/app')
+
+@section('content')
+<style>
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+  .breadcrumb a { color: var(--accent); text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb .sep { color: var(--border-2); }
+
+  .show-header {
+    margin-bottom: 28px;
+  }
+  .show-header h1 {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -.02em;
+    margin-bottom: 12px;
+    line-height: 1.2;
+  }
+  .show-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+  .date-info {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  /* Summary box */
+  .summary-box {
+    background: var(--accent-light);
+    border: 1px solid rgba(99,102,241,.2);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-bottom: 28px;
+  }
+  .summary-box p { font-size: 15px; line-height: 1.75; color: var(--text); }
+
+  /* Attendees */
+  .attendees-section { margin-bottom: 28px; }
+
+  /* Two-col detail grid */
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 768px) { .detail-grid { grid-template-columns: 1fr; } }
+
+  .section-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .section-card-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface-2);
+  }
+  .section-card-header h3 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+  .section-card-header .count {
+    background: var(--border);
+    color: var(--muted);
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-left: auto;
+  }
+  .section-card-body { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+
+  /* Decision card */
+  .decision-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--surface-2);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .decision-num {
+    width: 24px; height: 24px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .decision-text { font-size: 14px; line-height: 1.5; }
+  .decision-meta { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* Action item card */
+  .action-item {
+    padding: 12px 14px;
+    background: var(--surface-2);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .action-task { font-size: 14px; font-weight: 500; line-height: 1.4; }
+  .action-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .action-owner {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 600; color: var(--accent);
+    background: var(--accent-light);
+    padding: 3px 9px; border-radius: 99px;
+  }
+  .action-deadline { font-size: 12px; color: var(--muted); }
+
+  .priority-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .priority-High { background: #ef4444; }
+  .priority-Medium { background: #f59e0b; }
+  .priority-Low { background: #10b981; }
+
+  .status-badge {
+    font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px;
+    background: rgba(52,211,153,.12); color: #34d399; border: 1px solid rgba(52,211,153,.2);
+  }
+  .status-badge.In-Progress { background: rgba(251,191,36,.12); color: #fbbf24; border-color: rgba(251,191,36,.2); }
+  .status-badge.Blocked { background: rgba(248,113,113,.12); color: #f87171; border-color: rgba(248,113,113,.2); }
+
+  /* Question card */
+  .question-item {
+    padding: 12px 14px;
+    background: var(--surface-2);
+    border-radius: 8px;
+    border-left: 3px solid var(--warning);
+    border-top: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .question-text { font-size: 14px; }
+  .question-meta { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* Follow-up card */
+  .followup-item {
+    padding: 12px 14px;
+    background: var(--surface-2);
+    border-radius: 8px;
+    border-left: 3px solid #8b5cf6;
+    border-top: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .followup-text { font-size: 14px; }
+  .followup-meta { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* Discussion topics */
+  .topics-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+  }
+
+  /* Raw JSON */
+  details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  details summary {
+    padding: 14px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface-2);
+    border-bottom: 1px solid transparent;
+  }
+  details[open] summary { border-bottom-color: var(--border); }
+  details pre {
+    padding: 16px 20px;
+    overflow-x: auto;
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+    color: var(--text);
+    max-height: 400px;
+    overflow-y: auto;
+    background: var(--bg);
+  }
+
+  .empty-section {
+    padding: 20px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .back-btn-row { margin-top: 8px; }
+</style>
+
+<div class="breadcrumb">
+  <a href="/history">History</a>
+  <span class="sep">/</span>
+  <span>{{ meeting.title }}</span>
+</div>
+
+<div class="show-header">
+  <h1>{{ meeting.title }}</h1>
+  <div class="date-info">
+    Analyzed on {{ new Date(meeting.createdAt).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) }}
+    at {{ new Date(meeting.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) }}
+  </div>
+  <div class="show-badges">
+    <span class="badge badge-muted">{{ meeting.model }}</span>
+    @if(meeting.sentiment)
+    <span class="badge badge-{{ meeting.sentiment }}">{{ meeting.sentiment }}</span>
+    @end
+    @if(meeting.overallScore)
+    <span class="badge badge-accent">Score: {{ meeting.overallScore }}/100</span>
+    @end
+    <span class="badge badge-muted">V{{ meeting.promptVersion }} prompt</span>
+  </div>
+</div>
+
+@if(meeting.result.summary)
+<div class="summary-box">
+  <div class="section-title" style="margin-bottom:10px"><iconify-icon icon="lucide:message-square" width="16" height="16"></iconify-icon> Summary</div>
+  <p>{{ meeting.result.summary }}</p>
+</div>
+@end
+
+@if(meeting.result.attendees && meeting.result.attendees.length > 0)
+<div class="attendees-section">
+  <div class="section-title"><iconify-icon icon="lucide:users" width="16" height="16"></iconify-icon> Attendees</div>
+  <div class="chips">
+    @each(person in meeting.result.attendees)
+    <div class="chip">
+      {{ person.name }}{{ person.role ? ' · ' + person.role : '' }}
+    </div>
+    @end
+  </div>
+</div>
+@end
+
+<div class="detail-grid">
+  <!-- Left: Decisions + Questions -->
+  <div style="display:flex;flex-direction:column;gap:20px;">
+
+    <div class="section-card">
+      <div class="section-card-header">
+        <span><iconify-icon icon="lucide:check-circle" width="16" height="16"></iconify-icon></span>
+        <h3>Key Decisions</h3>
+        <span class="count">{{ (meeting.result.key_decisions || []).length }}</span>
+      </div>
+      <div class="section-card-body">
+        @if(meeting.result.key_decisions && meeting.result.key_decisions.length > 0)
+          @each((decision, i) in meeting.result.key_decisions)
+          <div class="decision-item">
+            <div class="decision-num">{{ i + 1 }}</div>
+            <div>
+              <div class="decision-text">{{ decision.decision }}</div>
+              @if(decision.rationale || decision.decided_by)
+              <div class="decision-meta">
+                {{ decision.decided_by ? 'By: ' + decision.decided_by : '' }}
+                {{ decision.rationale ? ' · ' + decision.rationale : '' }}
+              </div>
+              @end
+            </div>
+          </div>
+          @end
+        @else
+          <div class="empty-section">No key decisions recorded</div>
+        @end
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-card-header">
+        <span><iconify-icon icon="lucide:alert-triangle" width="16" height="16"></iconify-icon></span>
+        <h3>Open Questions</h3>
+        <span class="count">{{ (meeting.result.open_questions || []).length }}</span>
+      </div>
+      <div class="section-card-body">
+        @if(meeting.result.open_questions && meeting.result.open_questions.length > 0)
+          @each(q in meeting.result.open_questions)
+          <div class="question-item">
+            <div class="question-text">{{ q.question }}</div>
+            @if(q.raised_by || q.context)
+            <div class="question-meta">
+              {{ q.raised_by ? 'Raised by: ' + q.raised_by : '' }}
+              {{ q.context ? ' · ' + q.context : '' }}
+            </div>
+            @end
+          </div>
+          @end
+        @else
+          <div class="empty-section">No open questions recorded</div>
+        @end
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Right: Action Items + Follow-ups -->
+  <div style="display:flex;flex-direction:column;gap:20px;">
+
+    <div class="section-card">
+      <div class="section-card-header">
+        <span><iconify-icon icon="lucide:star" width="16" height="16"></iconify-icon></span>
+        <h3>Action Items</h3>
+        <span class="count">{{ (meeting.result.action_items || []).length }}</span>
+      </div>
+      <div class="section-card-body">
+        @if(meeting.result.action_items && meeting.result.action_items.length > 0)
+          @each(action in meeting.result.action_items)
+          <div class="action-item">
+            <div style="display:flex;align-items:flex-start;gap:8px;">
+              <span class="priority-dot priority-{{ action.priority || 'Medium' }}" style="margin-top:6px;flex-shrink:0;"></span>
+              <div class="action-task">{{ action.task }}</div>
+            </div>
+            <div class="action-meta">
+              @if(action.owner)
+              <span class="action-owner"><iconify-icon icon="lucide:user" width="12" height="12"></iconify-icon> {{ action.owner }}</span>
+              @end
+              @if(action.deadline)
+              <span class="action-deadline"><iconify-icon icon="lucide:calendar" width="12" height="12"></iconify-icon> {{ action.deadline }}</span>
+              @end
+              @if(action.status)
+              <span class="status-badge {{ (action.status || '').replace(' ', '-') }}">{{ action.status }}</span>
+              @end
+            </div>
+          </div>
+          @end
+        @else
+          <div class="empty-section">No action items recorded</div>
+        @end
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-card-header">
+        <span><iconify-icon icon="lucide:arrow-right" width="16" height="16"></iconify-icon></span>
+        <h3>Follow-up Items</h3>
+        <span class="count">{{ (meeting.result.follow_up_items || []).length }}</span>
+      </div>
+      <div class="section-card-body">
+        @if(meeting.result.follow_up_items && meeting.result.follow_up_items.length > 0)
+          @each(fu in meeting.result.follow_up_items)
+          <div class="followup-item">
+            <div class="followup-text">{{ fu.item }}</div>
+            @if(fu.assigned_to || fu.target_date)
+            <div class="followup-meta">
+              {{ fu.assigned_to ? '→ ' + fu.assigned_to : '' }}
+              {{ fu.target_date ? ' · ' + fu.target_date : '' }}
+            </div>
+            @end
+          </div>
+          @end
+        @else
+          <div class="empty-section">No follow-up items recorded</div>
+        @end
+      </div>
+    </div>
+
+  </div>
+</div>
+
+@if(meeting.result.discussion_topics && meeting.result.discussion_topics.length > 0)
+<div class="topics-section">
+  <div class="section-title"><iconify-icon icon="lucide:message-square" width="16" height="16"></iconify-icon> Discussion Topics</div>
+  <div class="chips">
+    @each(topic in meeting.result.discussion_topics)
+    <div class="chip">{{ topic }}</div>
+    @end
+  </div>
+</div>
+@end
+
+<details>
+  <summary><iconify-icon icon="lucide:settings" width="14" height="14"></iconify-icon> Raw JSON Output</summary>
+  <pre>{{ JSON.stringify(meeting.result, null, 2) }}</pre>
+</details>
+
+<div class="back-btn-row">
+  <a href="/history" class="btn btn-secondary">
+    <iconify-icon icon="lucide:arrow-left" width="14" height="14"></iconify-icon> Back to History
+  </a>
+</div>
+
+@end

@@ -1,5 +1,7 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import Meeting from '#models/meeting'
+import User from '#models/user'
+import Task from '#models/task'
 import GeminiService from '#services/gemini_service'
 
 export default class MeetingsController {
@@ -71,6 +73,39 @@ export default class MeetingsController {
         questionsCount: result.open_questions?.length || 0,
         sentiment: result.sentiment || null,
       })
+
+      // Auto-create tasks from action items, matching owner names to users
+      const actionItems: any[] = result.action_items || []
+      if (actionItems.length > 0) {
+        const users = await User.all()
+
+        for (const item of actionItems) {
+          const ownerName: string = (item.owner || '').trim().toLowerCase()
+          let assignedTo: number | null = null
+
+          if (ownerName && ownerName !== 'tbd' && ownerName !== 'unknown') {
+            const matched = users.find((u) => {
+              const uName = u.name.toLowerCase()
+              // match if either name contains the other (handles "James" matching "James Okafor")
+              return uName.includes(ownerName) || ownerName.includes(uName.split(' ')[0])
+            })
+            if (matched) assignedTo = matched.id
+          }
+
+          const priority = (['high', 'medium', 'low'].includes((item.priority || '').toLowerCase())
+            ? item.priority.toLowerCase()
+            : 'medium') as 'high' | 'medium' | 'low'
+
+          await Task.create({
+            title: item.task,
+            meetingId: meeting.id,
+            assignedTo,
+            priority,
+            status: 'pending',
+            dueDate: null,
+          })
+        }
+      }
 
       return response.redirect(`/history/${meeting.id}`)
     } catch (err: any) {

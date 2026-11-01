@@ -61,6 +61,18 @@ export default class MeetingsController {
           (result.key_decisions?.every((d: any) => d.decision.split(' ').length > 5) ? 20 : 10)
       )
 
+      // Auto-match project by name extracted from transcript
+      let projectId: number | null = null
+      const extractedProject: string = (result.project_name || '').trim().toLowerCase()
+      if (extractedProject) {
+        const projects = await Project.all()
+        const matched = projects.find((p) => {
+          const pName = p.name.toLowerCase()
+          return pName.includes(extractedProject) || extractedProject.includes(pName)
+        })
+        if (matched) projectId = matched.id
+      }
+
       const meeting = await Meeting.create({
         title: result.meeting_title || 'Untitled Meeting',
         transcript,
@@ -72,6 +84,7 @@ export default class MeetingsController {
         decisionsCount: result.key_decisions?.length || 0,
         questionsCount: result.open_questions?.length || 0,
         sentiment: result.sentiment || null,
+        projectId,
       })
 
       // Auto-create tasks from action items, matching owner names to users
@@ -86,7 +99,6 @@ export default class MeetingsController {
           if (ownerName && ownerName !== 'tbd' && ownerName !== 'unknown') {
             const matched = users.find((u) => {
               const uName = u.name.toLowerCase()
-              // match if either name contains the other (handles "James" matching "James Okafor")
               return uName.includes(ownerName) || ownerName.includes(uName.split(' ')[0])
             })
             if (matched) assignedTo = matched.id
@@ -99,6 +111,7 @@ export default class MeetingsController {
           await Task.create({
             title: item.task,
             meetingId: meeting.id,
+            projectId: meeting.projectId,
             assignedTo,
             priority,
             status: 'pending',

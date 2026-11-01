@@ -247,47 +247,51 @@ John: Agreed, we'll go with the new design system..."
   <div class="overlay-sub">This may take 10–30 seconds</div>
 </div>
 
-<template id="sample-transcript">Q3 Planning Meeting - August 15, 2024
+<template id="sample-transcript">Sprint 24 Debrief | FS Kriyam — November 8, 2026
 
-Attendees: Sarah Chen (PM), James Okafor (Engineering Lead), Priya Sharma (Designer), Tom Walsh (Marketing)
+Attendees: Shreyas R (Project Manager), Azhar (Developer), Asif (Developer), Sulagna (Developer), Soumik (Developer)
 
-Sarah: Alright everyone, let's kick off the Q3 planning session. We have a lot to get through today.
+Shreyas: Alright everyone, let's close out Sprint 24. Good sprint overall but we have some things to carry forward. Let's go through it quickly.
 
-James: Before we start, I want to flag that our backend infrastructure is under real strain. We saw some 503 errors last week during peak hours.
+Azhar: From my side, the authentication module is done and merged. All test cases passing. But the profile settings page still has an issue with image upload — it's throwing a 413 error on files above 2MB.
 
-Sarah: That's critical. Let's decide right now — James, can you own a scaling audit by end of next week?
+Shreyas: Okay, let's fix that this sprint. Azhar, can you own the file upload fix and get it done by November 11th?
 
-James: Yes, I'll own that. I'll have a full capacity report by August 22nd.
+Azhar: Yes, I'll handle it.
 
-Priya: I also want to bring up the mobile app redesign. We've been discussing it for two quarters now.
+Asif: The notification service is deployed. Real-time push notifications are working on web but on mobile there's a delay of about 8 to 10 seconds. I think it's a socket reconnection issue.
 
-Sarah: We've decided to move forward with the redesign. Priya, please finalize the design mockups by August 25th.
+Shreyas: That delay is not acceptable for the client demo. Asif, please prioritize fixing the mobile notification delay. Can you get it resolved by November 12th?
 
-Priya: Absolutely. I'll prioritize high-traffic screens first.
+Asif: I'll investigate today and fix it. November 12th works.
 
-Tom: From a marketing perspective, we need landing pages before the redesign launches. When does engineering need copy?
+Sulagna: The reporting dashboard UI is almost complete. I've finished the charts and the filter section. The only pending part is the export to PDF feature — I need Soumik's API endpoint for that.
 
-James: I'll need all copy by September 1st to hit our October launch window.
+Soumik: The export endpoint is ready actually, I was just waiting to confirm the response format with Sulagna.
 
-Tom: I'll get you the copy by September 1st. I own that.
+Sulagna: Let's sync after this call and finalise it. I can have the full dashboard done by November 13th once we align.
 
-Sarah: Good. What about the API integration with Salesforce? Has that been resolved?
+Shreyas: Good. Sulagna owns the dashboard completion by November 13th. Soumik, please support Sulagna on the export API today itself.
 
-James: Not yet — we're still waiting on their dev team to respond to our questions.
+Soumik: Done, I'll share the API docs right after this meeting.
 
-Sarah: That's an open question then. Can someone follow up with Salesforce next week?
+Shreyas: Soumik, what else is pending on your end?
 
-Priya: I'll add it to the follow-up list, but James should own the technical follow-up.
+Soumik: The search and filter functionality for the project list is pending. I started it but it's about 60% done. I can complete it by November 14th.
 
-James: Agreed, I'll ping their team Monday.
+Shreyas: That works, just make sure it's in staging before the client demo on November 18th.
 
-Sarah: Let's also align on our Q3 OKRs. We agreed last month on 20% DAU growth. Are we confident?
+Azhar: One thing I want to flag — we don't have proper error boundary handling on the frontend. If any API fails, the whole page crashes instead of showing a fallback. We should fix that.
 
-Tom: I'm not sure the redesign timeline gives us enough time to see impact in Q3. We should revisit this.
+Shreyas: Agreed, we'll take that up. Azhar, add that to Sprint 25 scope and we'll plan it properly.
 
-Sarah: Let's park it for now and revisit after Priya's mockups are shared.
+Sulagna: Also open question — are we going with server-side export or client-side for the PDF feature? It affects how I build the UI.
 
-Sarah: Wrapping up — main decisions: scaling audit owned by James, redesign approved and design by Priya, copy deadline set for Tom. Action items clear. Let's reconvene next Friday.</template>
+Soumik: Server-side is cleaner, I already have the endpoint generating the PDF. Let's go with that.
+
+Shreyas: Decided — PDF export will be server-side. Let's document that.
+
+Shreyas: Alright, wrapping up. Key decisions: server-side PDF export confirmed, mobile notification delay is a P1 fix. Action items — Azhar fixes file upload by November 11th, Asif fixes mobile notifications by November 12th, Sulagna completes dashboard by November 13th, Soumik completes search and filter by November 14th. Client demo is November 18th — everything must be in staging by November 16th. Let's go.</template>
 
 <script>
 function loadSample() {

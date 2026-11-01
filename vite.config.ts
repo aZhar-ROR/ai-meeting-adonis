@@ -2,6 +2,9 @@ import { defineConfig } from 'vite'
 import adonisjs from '@adonisjs/vite/client'
 
 export default defineConfig({
+  server: {
+    allowedHosts: ['ai-meeting-adonis.onrender.com'],
+  },
   plugins: [
     adonisjs({
       /**

@@ -2,6 +2,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 import Meeting from '#models/meeting'
 import User from '#models/user'
 import Task from '#models/task'
+import Project from '#models/project'
 import GeminiService from '#services/gemini_service'
 
 export default class MeetingsController {

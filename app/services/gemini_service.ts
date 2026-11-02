@@ -19,7 +19,17 @@ export default class GeminiService {
       body: body.toString(),
     })
 
-    const data = (await res.json()) as Record<string, any>
+    const text = await res.text()
+    let data: Record<string, any>
+
+    try {
+      data = JSON.parse(text)
+    } catch {
+      throw new Error(
+        `The AI service is currently starting up (it sleeps when idle). ` +
+        `Please visit ${PYTHON_API_URL}/health and wait until it shows {"status":"ok"}, then try again.`
+      )
+    }
 
     if (!res.ok) {
       throw new Error(data.error || `Python AI service returned ${res.status}`)

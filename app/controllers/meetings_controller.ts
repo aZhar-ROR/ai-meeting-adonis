@@ -4,6 +4,32 @@ import User from '#models/user'
 import Task from '#models/task'
 import Project from '#models/project'
 import GeminiService from '#services/gemini_service'
+import { DateTime } from 'luxon'
+
+function parseDeadline(deadline: string | null | undefined): DateTime | null {
+  if (!deadline || ['tbd', 'n/a', 'none', ''].includes((deadline || '').toLowerCase().trim())) {
+    return null
+  }
+  // Try parsing as-is first
+  const formats = [
+    'MMMM d',        // November 14
+    'MMMM do',       // November 14th (ordinal)
+    'MMM d',         // Nov 14
+    'MMMM d, yyyy',  // November 14, 2026
+    'yyyy-MM-dd',    // 2026-11-14
+    'MM/dd/yyyy',    // 11/14/2026
+  ]
+  // Strip ordinal suffixes: 14th → 14, 1st → 1
+  const cleaned = deadline.replace(/(\d+)(st|nd|rd|th)/gi, '$1')
+  const year = new Date().getFullYear()
+  for (const fmt of formats) {
+    const dt = DateTime.fromFormat(cleaned, fmt, { locale: 'en' })
+    if (dt.isValid) {
+      return dt.year < 2000 ? dt.set({ year }) : dt
+    }
+  }
+  return null
+}
 
 export default class MeetingsController {
   async index({ view }: HttpContext) {
@@ -116,7 +142,7 @@ export default class MeetingsController {
             assignedTo,
             priority,
             status: 'pending',
-            dueDate: null,
+            dueDate: parseDeadline(item.deadline),
           })
         }
       }
